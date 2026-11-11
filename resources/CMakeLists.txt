@@ -1,0 +1,23 @@
+﻿file (GLOB_RECURSE MY_RESOURCE_FILES CONFIGURE_DEPENDS LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_LIST_DIR} *.*)
+
+set (RESOURCE_COPY_COMMANDS)
+
+foreach (RESOURCE_FILE IN LISTS MY_RESOURCE_FILES)
+	get_filename_component (RESOURCE_NAME "${RESOURCE_FILE}" NAME)
+	string (TOLOWER "${RESOURCE_NAME}" RESOURCE_NAME)
+	if (RESOURCE_NAME STREQUAL "cmakelists.txt")
+		continue ()
+	endif ()
+
+	get_filename_component (RESOURCE_DIR "${RESOURCE_FILE}" DIRECTORY)
+	list (APPEND RESOURCE_COPY_COMMANDS
+		COMMAND ${CMAKE_COMMAND} -E make_directory
+			"$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/resources/${RESOURCE_DIR}"
+		COMMAND ${CMAKE_COMMAND} -E copy_if_different
+			"${CMAKE_CURRENT_LIST_DIR}/${RESOURCE_FILE}"
+			"$<TARGET_FILE_DIR:${CMAKE_PROJECT_NAME}>/resources/${RESOURCE_FILE}"
+	)
+endforeach ()
+
+add_custom_target (copy_resources ${RESOURCE_COPY_COMMANDS} VERBATIM)
+add_dependencies (${CMAKE_PROJECT_NAME} copy_resources)

@@ -23,13 +23,16 @@ public:
 	int get_size() const { return m_size; }
 	int get_max_stones() const { return m_max_stones; }
 	int get_current_level() const { return m_current_level; }
+	int get_remaining_stones() const;
+	bool use_stone();
+	int count_tiles(char) const;
 
 	bool is_inside(int row, int col) const;
 	bool is_wall(int row, int col) const;
 
 	// Returns '#' for cells outside the board.
-	char get_tile(int row, int col) const;
-	void set_tile(int row, int col, char tile);
+	char get_tile(int, int) const;
+	void set_tile(int, int, char);
 
 	const std::vector<std::vector<char>>& get_board() const { return m_board; }
 
@@ -39,4 +42,5 @@ private:
 	int m_size = 0;
 	int m_max_stones = 0;
 	int m_current_level = 0;
+	int m_remaining_stones = 0;
 };

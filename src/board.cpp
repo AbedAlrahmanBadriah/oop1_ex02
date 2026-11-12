@@ -10,8 +10,6 @@
 board::board(const std::string& path)
 {
 	m_file.open(path);
-	if (!m_file.is_open())
-		std::cerr << "Error opening file: " << path << '\n';
 }
 
 bool board::load_next_level()
@@ -37,11 +35,13 @@ bool board::load_next_level()
 		return false;
 	}
 
+	m_remaining_stones = m_max_stones;
+
 	// Consume the rest of the header line.
 	m_file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
 	m_board.assign(static_cast<std::size_t>(m_size),
-		std::vector<char>(static_cast<std::size_t>(m_size), board::k_wall));
+		std::vector<char>(static_cast<std::size_t>(m_size), board::k_empty));
 
 	std::string line;
 	for (int row = 0; row < m_size; ++row)
@@ -104,4 +104,33 @@ void board::set_tile(int row, int col, char tile)
 		return;
 
 	m_board[static_cast<std::size_t>(row)][static_cast<std::size_t>(col)] = tile;
+}
+
+int board::get_remaining_stones() const
+{
+	return m_remaining_stones;
+}
+
+bool board::use_stone()
+{
+	if (m_remaining_stones > 0)
+	{
+		--m_remaining_stones;
+		return true;
+	}
+	return false;
+}
+
+int board::count_tiles(char tile) const
+{
+	int count = 0;
+	for (const auto& row : m_board)
+	{
+		for (char t : row)
+		{
+			if (t == tile)
+				++count;
+		}
+	}
+	return count;
 }

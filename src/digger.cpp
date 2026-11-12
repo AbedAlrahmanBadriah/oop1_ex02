@@ -29,3 +29,11 @@ void digger::set_lives(int lives)
 {
 	m_lives = lives;
 }
+
+bool digger::lose_life()
+{
+	if (m_lives > 0)
+		--m_lives;
+
+	return m_lives > 0;
+}

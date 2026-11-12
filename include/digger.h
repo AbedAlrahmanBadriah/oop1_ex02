@@ -16,6 +16,7 @@ public:
 
 	int get_lives() const;
 	void set_lives(int lives);
+	bool lose_life();
 
 private:
 	Location m_location{-1, -1};

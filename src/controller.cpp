@@ -24,7 +24,7 @@ void controller::run()
 		return;
 	}
 
-	place_digger();
+	place_characters();
 
 	Screen::resetLocation();
 	render();
@@ -40,8 +40,12 @@ void controller::render() const
 	{
 		for (int col = 0; col < m_board.get_size(); ++col)
 		{
-			if (m_digger.position() == Location{row, col})
+			const Location here{row, col};
+
+			if (m_digger.position() == here)
 				std::cout << board::k_digger;
+			else if (guard_at(here))
+				std::cout << board::k_guard;
 			else
 				std::cout << m_board.get_tile(row, col);
 		}
@@ -65,6 +69,9 @@ bool controller::handle_input()
 
 	if (key == Keys::SPECIAL_KEY)
 		key = _getch();
+
+	if (key == k_space)
+		return move_digger(m_digger.position());
 
 	Location delta{ 0, 0 };
 
@@ -95,6 +102,18 @@ bool controller::move_digger(Location target)
 
 	m_digger.move_to(target);
 
+	// A guard on the target cell catches the digger immediately. The hit
+	// takes priority over the tile, so the tile is NOT collected here.
+	if (digger_caught())
+	{
+		if (!handle_hit())
+			return false;
+
+		Screen::resetLocation();
+		render();
+		return true;
+	}
+
 	if (tile == board::k_stone)
 	{
 		m_board.use_stone();
@@ -112,33 +131,103 @@ bool controller::move_digger(Location target)
 
 		if (m_board.load_next_level())
 		{
-			place_digger();
+			place_characters();
 			system("cls");
+			Screen::resetLocation();
+			render();
+			return true;
 		}
-		else
-		{
-			system("cls");
-			std::cout << "\nYou win! Final score: " << m_score << '\n';
-			return false;
-		}
+
+		system("cls");
+		std::cout << "\nYou win! Final score: " << m_score << '\n';
+		return false;
 	}
+
+	move_guards();
+
+	if (digger_caught() && !handle_hit())
+		return false;
 
 	Screen::resetLocation();
 	render();
 	return true;
 }
 
-void controller::place_digger()
+void controller::move_guards()
 {
+	for (guard& g : m_guards)
+	{
+		const Location next = g.choose_move(m_board, m_digger.position());
+
+		if (next != g.position())
+			g.move_to(next);
+	}
+}
+
+bool controller::digger_caught() const
+{
+	for (const guard& g : m_guards)
+	{
+		if (g.position() == m_digger.position())
+			return true;
+	}
+
+	return false;
+}
+
+bool controller::handle_hit()
+{
+	if (!m_digger.lose_life())
+	{
+		system("cls");
+		std::cout << "\nGame over. Final score: " << m_score << '\n';
+		return false;
+	}
+
+	reset_characters();
+	return true;
+}
+
+void controller::place_characters()
+{
+	m_guards.clear();
+	m_digger_start = Location{ -1, -1 };
+
 	for (int row = 0; row < m_board.get_size(); ++row)
 	{
 		for (int col = 0; col < m_board.get_size(); ++col)
 		{
 			if (m_board.get_tile(row, col) == board::k_digger)
 			{
+				m_digger_start = Location{ row, col };
 				m_digger.reset(Location{row, col});
+				m_board.set_tile(row, col, board::k_empty);
+			}
+			else if (m_board.get_tile(row, col) == board::k_guard)
+			{
+				m_guards.emplace_back(Location{ row, col });
 				m_board.set_tile(row, col, board::k_empty);
 			}
 		}
 	}
+}
+
+void controller::reset_characters()
+{
+	m_digger.reset(m_digger_start);
+	for (auto& guard : m_guards)
+	{
+		guard.reset();
+	}
+}
+
+bool controller::guard_at(Location location) const
+{
+	for (const guard& g : m_guards)
+	{
+		if (g.position() == location)
+			return true;
+	}
+
+	return false;
 }
